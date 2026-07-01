@@ -23,17 +23,11 @@ env:
   AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION:    us-east-2
-  TF_VAR_db_password:    ${{ secrets.TF_VAR_DB_PASSWORD }}
-
-defaults:
-  run:
-    working-directory: .
 
 jobs:
   # -------------------------------------------
   # PLAN - runs on every Pull Request
   # Posts the plan output as a PR comment
-  # so you can review before merging
   # -------------------------------------------
   plan:
     name: Terraform Plan
@@ -49,6 +43,29 @@ jobs:
         with:
           terraform_version: 1.5.0
 
+      - name: Generate tfvars
+        run: |
+          cat > terraform.tfvars <<EOF
+          region               = "us-east-2"
+          environment          = "dev"
+          project_name         = "devops-project"
+          state_bucket_name    = "devops-project-state-us-east-2"
+          dynamodb_table_name  = "devops-project-terraform-lock"
+          vpc_cidr             = "10.0.0.0/16"
+          public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+          private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+          availability_zones   = ["us-east-2a", "us-east-2b"]
+          ami_id               = "ami-04a8291398335a9ac"
+          instance_type        = "t3.micro"
+          asg_min_size         = 1
+          asg_max_size         = 3
+          asg_desired_capacity = 2
+          db_name              = "employeedb"
+          db_username          = "admin"
+          db_password          = "${{ secrets.TF_VAR_DB_PASSWORD }}"
+          db_instance_class    = "db.t3.micro"
+          EOF
+
       - name: Terraform Init
         run: terraform init
 
@@ -60,26 +77,27 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -var-file="terraform.tfvars"
+        run: terraform plan -no-color -var-file="terraform.tfvars" 2>&1 | tee plan_output.txt
         continue-on-error: true
 
       - name: Post Plan as PR Comment
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan_output.txt', 'utf8').slice(0, 60000);
             const output = `### Terraform Plan 📋
             **Triggered by:** @${{ github.actor }}
-            **Action:** \`${{ github.event_name }}\`
 
             <details><summary>Show Plan</summary>
 
-            \`\`\`terraform
-            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+            ${plan}
             \`\`\`
 
             </details>
 
-            **Plan Status:** ${{ steps.plan.outcome == 'success' && '✅ Success' || '❌ Failed' }}`;
+            **Status:** ${{ steps.plan.outcome == 'success' && '✅ Success' || '❌ Failed' }}`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -94,13 +112,11 @@ jobs:
 
   # -------------------------------------------
   # APPLY - runs automatically on push to main
-  # Deploys the infrastructure to AWS
   # -------------------------------------------
   apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: production
 
     steps:
       - name: Checkout code
@@ -110,6 +126,29 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
+
+      - name: Generate tfvars
+        run: |
+          cat > terraform.tfvars <<EOF
+          region               = "us-east-2"
+          environment          = "dev"
+          project_name         = "devops-project"
+          state_bucket_name    = "devops-project-state-us-east-2"
+          dynamodb_table_name  = "devops-project-terraform-lock"
+          vpc_cidr             = "10.0.0.0/16"
+          public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+          private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+          availability_zones   = ["us-east-2a", "us-east-2b"]
+          ami_id               = "ami-04a8291398335a9ac"
+          instance_type        = "t3.micro"
+          asg_min_size         = 1
+          asg_max_size         = 3
+          asg_desired_capacity = 2
+          db_name              = "employeedb"
+          db_username          = "admin"
+          db_password          = "${{ secrets.TF_VAR_DB_PASSWORD }}"
+          db_instance_class    = "db.t3.micro"
+          EOF
 
       - name: Terraform Init
         run: terraform init
@@ -125,7 +164,6 @@ jobs:
 
   # -------------------------------------------
   # MANUAL - triggered from GitHub Actions UI
-  # Lets you run plan, apply or destroy manually
   # -------------------------------------------
   manual:
     name: Terraform Manual (${{ github.event.inputs.action }})
@@ -140,6 +178,29 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
+
+      - name: Generate tfvars
+        run: |
+          cat > terraform.tfvars <<EOF
+          region               = "us-east-2"
+          environment          = "dev"
+          project_name         = "devops-project"
+          state_bucket_name    = "devops-project-state-us-east-2"
+          dynamodb_table_name  = "devops-project-terraform-lock"
+          vpc_cidr             = "10.0.0.0/16"
+          public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+          private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+          availability_zones   = ["us-east-2a", "us-east-2b"]
+          ami_id               = "ami-04a8291398335a9ac"
+          instance_type        = "t3.micro"
+          asg_min_size         = 1
+          asg_max_size         = 3
+          asg_desired_capacity = 2
+          db_name              = "employeedb"
+          db_username          = "admin"
+          db_password          = "${{ secrets.TF_VAR_DB_PASSWORD }}"
+          db_instance_class    = "db.t3.micro"
+          EOF
 
       - name: Terraform Init
         run: terraform init
