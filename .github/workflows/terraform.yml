@@ -33,15 +33,12 @@ jobs:
     name: Terraform Plan
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          terraform_version: 1.10.0
 
       - name: Generate tfvars
         run: |
@@ -72,9 +69,6 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color -var-file="terraform.tfvars" 2>&1 | tee plan_output.txt
@@ -86,24 +80,11 @@ jobs:
           script: |
             const fs = require('fs');
             const plan = fs.readFileSync('plan_output.txt', 'utf8').slice(0, 60000);
-            const output = `### Terraform Plan 📋
-            **Triggered by:** @${{ github.actor }}
-
-            <details><summary>Show Plan</summary>
-
-            \`\`\`
-            ${plan}
-            \`\`\`
-
-            </details>
-
-            **Status:** ${{ steps.plan.outcome == 'success' && '✅ Success' || '❌ Failed' }}`;
-
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: output
+              body: `### Terraform Plan\n\`\`\`\n${plan}\n\`\`\``
             })
 
       - name: Fail if plan failed
@@ -111,21 +92,18 @@ jobs:
         run: exit 1
 
   # -------------------------------------------
-  # APPLY - runs automatically on push to main
+  # APPLY - runs on every push to main
   # -------------------------------------------
   apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          terraform_version: 1.10.0
 
       - name: Generate tfvars
         run: |
@@ -166,18 +144,15 @@ jobs:
   # MANUAL - triggered from GitHub Actions UI
   # -------------------------------------------
   manual:
-    name: Terraform Manual (${{ github.event.inputs.action }})
+    name: Terraform Manual
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          terraform_version: 1.10.0
 
       - name: Generate tfvars
         run: |

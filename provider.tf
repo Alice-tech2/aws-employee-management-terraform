@@ -19,7 +19,6 @@ terraform {
     bucket       = "devops-project-state-us-east-2"
     key          = "devops-project/terraform.tfstate"
     region       = "us-east-2"
-    use_lockfile = true
     encrypt      = true
   }
 }
