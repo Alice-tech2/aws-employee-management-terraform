@@ -121,7 +121,45 @@ devops-project/
 
 ---
 
-## Deployment
+## CI/CD Pipeline
+
+This project uses GitHub Actions for automated deployments.
+
+| Trigger | Action |
+|---------|--------|
+| Pull Request opened | Runs `terraform plan` and posts output as PR comment |
+| Push to `main` | Runs `terraform apply` automatically |
+| Manual trigger | Run plan, apply or destroy from GitHub Actions UI |
+
+### Pipeline Flow
+
+```
+Pull Request
+     │
+     ▼
+ terraform init
+ terraform validate
+ terraform fmt -check
+ terraform plan ──► posts plan as PR comment
+     │
+  Merge to main
+     │
+     ▼
+ terraform apply ──► infrastructure updated on AWS
+```
+
+### Required GitHub Secrets
+
+Go to your repo → **Settings → Secrets and variables → Actions** and add:
+
+| Secret | Value |
+|--------|-------|
+| `AWS_ACCESS_KEY_ID` | Your IAM user access key |
+| `AWS_SECRET_ACCESS_KEY` | Your IAM user secret key |
+| `TF_VAR_DB_PASSWORD` | Your RDS master password |
+
+---
+
 
 ### 1. Create the S3 backend bucket manually (one-time)
 

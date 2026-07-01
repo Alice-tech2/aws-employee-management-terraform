@@ -16,18 +16,16 @@ terraform {
   # Run the backend module first to create them.
   # -------------------------------------------
   backend "s3" {
-    bucket         = "devops-project-state-us-east-2"
-    key            = "devops-project/terraform.tfstate"
-    region         = "us-east-2"
-    profile        = "default"
-    use_lockfile   = true
-    encrypt        = true
+    bucket       = "devops-project-state-us-east-2"
+    key          = "devops-project/terraform.tfstate"
+    region       = "us-east-2"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
 provider "aws" {
-  region  = var.region
-  profile = "default"
+  region = var.region
 
   default_tags {
     tags = {
